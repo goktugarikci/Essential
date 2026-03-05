@@ -6,7 +6,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 const resources = {
   tr: {
     translation: {
-       "login": "Giriş Yap",
+      "login": "Giriş Yap",
       "start_free": "Ücretsiz Başla",
       "upgrade_enterprise": "Enterprise'a Yükselt",
       "hero_title": "Ekibinizin İhtiyacı Olan Her Şey. <span class='text-blue-400'>Fazlası Değil.</span>",
@@ -49,6 +49,8 @@ const resources = {
       "remember_me": "Beni hatırla",
       "or_continue": "Veya şununla devam et",
       "google_btn": "Google ile devam et",
+      
+      // Dashboard Çevirileri
       "dash_search": "Konuşma ara...",
       "dash_direct_messages": "Özel Mesajlar",
       "dash_friends": "Arkadaşlar",
@@ -57,12 +59,37 @@ const resources = {
       "dash_pending": "İstekler",
       "dash_add_friend": "Arkadaş Ekle",
       "dash_no_online": "Şu an kimse çevrimiçi değil...",
+      "dash_no_one_here": "Kimse yok.",
       "dash_logout": "Çıkış Yap",
       "dash_loading": "Veriler yükleniyor...",
       "dash_no_friends": "Henüz hiç arkadaşın yok.",
       "dash_add_first_friend": "Hemen birilerini ekleyerek sohbete başla!",
       "dash_error": "Veriler çekilirken bir hata oluştu.",
-    
+      
+      // Ayarlar Modalı Çevirileri
+      "dash_settings": "Ayarlar",
+      "dash_settings_title": "Kullanıcı Ayarları",
+      "dash_settings_profile": "Profil Görünümü",
+      "dash_settings_profile_desc": "İsmini, biyografini ve profil resmini güncelle.",
+      "dash_settings_edit": "Düzenle",
+      "dash_settings_theme": "Görünüm ve Tema",
+      "dash_settings_theme_desc": "Uygulamanın renk paletini seçin.",
+      "dash_theme_dark": "Karanlık (Varsayılan)",
+      "dash_theme_light": "Aydınlık",
+      "dash_theme_dracula": "Dracula (Özel)",
+      "dash_settings_danger": "Tehlikeli Bölge",
+      "dash_settings_danger_desc": "Hesabınızı kalıcı olarak silin veya dondurun.",
+      "dash_settings_delete": "Hesabı Sil",
+      
+      // Ban Sayfası
+      "ban_title": "Hesabınız Askıya Alındı",
+      "ban_desc": "Sistem politikalarımızı veya topluluk kurallarımızı ihlal ettiğiniz tespit edildiği için Essential'a erişiminiz durdurulmuştur.",
+      "ban_contact_text": "Eğer bunun bir hata olduğunu düşünüyorsanız, lütfen destek ekibimizle iletişime geçin:",
+      "ban_back_login": "Giriş Sayfasına Dön",
+      "dash_theme_orange": "Turuncu Mod",
+      "dash_theme_lime": "Lime Mod",
+      "dash_theme_pink": "Pembe Mod",
+      "dash_theme_purple": "Mor Mod",
     }
   },
   en: {
@@ -110,6 +137,7 @@ const resources = {
       "remember_me": "Remember me",
       "or_continue": "Or continue with",
       "google_btn": "Continue with Google",
+      
       "dash_search": "Find or start a conversation...",
       "dash_direct_messages": "Direct Messages",
       "dash_friends": "Friends",
@@ -118,13 +146,37 @@ const resources = {
       "dash_pending": "Pending",
       "dash_add_friend": "Add Friend",
       "dash_no_online": "No one is online right now...",
+      "dash_no_one_here": "No one here.",
       "dash_logout": "Log Out",
       "dash_loading": "Loading data...",
       "dash_no_friends": "You don't have any friends yet.",
       "dash_add_first_friend": "Start chatting by adding someone right now!",
       "dash_error": "An error occurred while fetching data.",
+      
+      "dash_settings": "Settings",
+      "dash_settings_title": "User Settings",
+      "dash_settings_profile": "Profile Appearance",
+      "dash_settings_profile_desc": "Update your name, bio, and profile picture.",
+      "dash_settings_edit": "Edit",
+      "dash_settings_theme": "Appearance & Theme",
+      "dash_settings_theme_desc": "Select the application's color palette.",
+      "dash_theme_dark": "Dark (Default)",
+      "dash_theme_light": "Light",
+      "dash_theme_dracula": "Dracula (Custom)",
+      "dash_settings_danger": "Danger Zone",
+      "dash_settings_danger_desc": "Permanently delete or freeze your account.",
+      "dash_settings_delete": "Delete Account",
+      
+      "ban_title": "Account Suspended",
+      "ban_desc": "Your access to Essential has been suspended due to a violation of our system policies or community guidelines.",
+      "ban_contact_text": "If you believe this is a mistake, please contact our support team:",
+      "ban_back_login": "Return to Login",
+      "dash_theme_orange": "Orange Mode",
+      "dash_theme_lime": "Lime Mode",
+      "dash_theme_pink": "Pink Mode",
+      "dash_theme_purple": "Purple Mode",
     }
-    },
+  },
   de: {
     translation: {
       "login": "Anmelden",
@@ -170,6 +222,7 @@ const resources = {
       "remember_me": "Angemeldet bleiben",
       "or_continue": "Oder weiter mit",
       "google_btn": "Weiter mit Google",
+      
       "dash_search": "Unterhaltung suchen...",
       "dash_direct_messages": "Direktnachrichten",
       "dash_friends": "Freunde",
@@ -178,11 +231,35 @@ const resources = {
       "dash_pending": "Ausstehend",
       "dash_add_friend": "Freund hinzufügen",
       "dash_no_online": "Niemand ist gerade online...",
+      "dash_no_one_here": "Niemand hier.",
       "dash_logout": "Abmelden",
       "dash_loading": "Daten werden geladen...",
       "dash_no_friends": "Du hast noch keine Freunde.",
       "dash_add_first_friend": "Füge jemanden hinzu, um mit dem Chatten zu beginnen!",
       "dash_error": "Beim Abrufen der Daten ist ein Fehler aufgetreten.",
+      
+      "dash_settings": "Einstellungen",
+      "dash_settings_title": "Benutzereinstellungen",
+      "dash_settings_profile": "Profil-Erscheinungsbild",
+      "dash_settings_profile_desc": "Aktualisiere deinen Namen, deine Biografie und dein Profilbild.",
+      "dash_settings_edit": "Bearbeiten",
+      "dash_settings_theme": "Aussehen und Design",
+      "dash_settings_theme_desc": "Wählen Sie die Farbpalette der Anwendung.",
+      "dash_theme_dark": "Dunkel (Standard)",
+      "dash_theme_light": "Hell",
+      "dash_theme_dracula": "Dracula (Spezial)",
+      "dash_settings_danger": "Gefahrenzone",
+      "dash_settings_danger_desc": "Lösche oder friere dein Konto dauerhaft ein.",
+      "dash_settings_delete": "Konto löschen",
+      
+      "ban_title": "Konto gesperrt",
+      "ban_desc": "Ihr Zugang zu Essential wurde wegen eines Verstoßes gegen unsere Systemrichtlinien oder Community-Regeln gesperrt.",
+      "ban_contact_text": "Wenn Sie glauben, dass dies ein Fehler ist, kontaktieren Sie bitte unser Support-Team:",
+      "ban_back_login": "Zurück zum Login",
+      "dash_theme_orange": "Orange Modus",
+      "dash_theme_lime": "Lime Modus",
+      "dash_theme_pink": "Rosa Modus",
+      "dash_theme_purple": "Lila Modus",
       
     }
   }
@@ -195,7 +272,7 @@ i18n
     resources,
     fallbackLng: "tr",
     interpolation: {
-      escapeValue: false // React XSS korumasını zaten yapıyor, HTML (span) render edebilmek için kapattık
+      escapeValue: false 
     }
   });
 

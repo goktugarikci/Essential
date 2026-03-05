@@ -1,8 +1,87 @@
 /* src/index.css */
+
+/* Tailwind v4'ün yeni içe aktarma yöntemi */
 @import "tailwindcss";
 
-/* Eğer özel bir font veya arka plan rengi eklemek isterseniz buraya devam edebilirsiniz */
-body {
-  background-color: #0f0c29;
-  color: white;
+/* 1. ADIM: Tailwind'e yeni tema renklerimizi tanıtıyoruz */
+@theme {
+  --color-theme-primary: var(--bg-primary);
+  --color-theme-secondary: var(--bg-secondary);
+  --color-theme-tertiary: var(--bg-tertiary);
+  --color-theme-text: var(--text-main);
+  --color-theme-muted: var(--text-muted);
+  --color-theme-border: var(--border-color);
+}
+
+/* 2. ADIM: Çoklu Tema Renk Paletlerimiz */
+@layer base {
+  /* KARANLIK TEMA (Varsayılan) */
+  :root, .dark {
+    --bg-primary: #1e1f22;
+    --bg-secondary: #2b2d31;
+    --bg-tertiary: #313338;
+    --text-main: #ffffff;
+    --text-muted: #9ca3af;
+    --border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  /* AYDINLIK TEMA */
+  .light {
+    --bg-primary: #f2f3f5;
+    --bg-secondary: #e3e5e8;
+    --bg-tertiary: #ffffff;
+    --text-main: #060607;
+    --text-muted: #4f5660;
+    --border-color: rgba(0, 0, 0, 0.1);
+  }
+
+  /* DRACULA TEMASI (Özel) */
+  .dracula {
+    --bg-primary: #282a36;
+    --bg-secondary: #44475a;
+    --bg-tertiary: #6272a4;
+    --text-main: #f8f8f2;
+    --text-muted: #8be9fd;
+    --border-color: rgba(139, 233, 253, 0.2);
+  }
+
+  /* TURUNCU MOD */
+  .orange {
+    --bg-primary: #2d1b11;
+    --bg-secondary: #3f2618;
+    --bg-tertiary: #52311f;
+    --text-main: #fff5f0;
+    --text-muted: #fdba74;
+    --border-color: rgba(249, 115, 22, 0.2);
+  }
+
+  /* LIME MOD */
+  .lime {
+    --bg-primary: #142418;
+    --bg-secondary: #1c3322;
+    --bg-tertiary: #25422d;
+    --text-main: #f0fdf4;
+    --text-muted: #86efac;
+    --border-color: rgba(74, 222, 128, 0.2);
+  }
+
+  /* PEMBE MOD */
+  .pink {
+    --bg-primary: #311325;
+    --bg-secondary: #451b34;
+    --bg-tertiary: #5c2446;
+    --text-main: #fdf2f8;
+    --text-muted: #f9a8d4;
+    --border-color: rgba(244, 114, 182, 0.2);
+  }
+
+  /* MOR MOD */
+  .purple {
+    --bg-primary: #1e1b4b;
+    --bg-secondary: #2e287c;
+    --bg-tertiary: #3b32a8;
+    --text-main: #f5f3ff;
+    --text-muted: #c4b5fd;
+    --border-color: rgba(167, 139, 250, 0.2);
+  }
 }

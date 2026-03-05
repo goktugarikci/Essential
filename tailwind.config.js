@@ -1,3 +1,4 @@
+// tailwind.config.js
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -5,7 +6,16 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        'theme-primary': 'var(--bg-primary)',
+        'theme-secondary': 'var(--bg-secondary)',
+        'theme-tertiary': 'var(--bg-tertiary)',
+        'theme-text': 'var(--text-main)',
+        'theme-muted': 'var(--text-muted)',
+        'theme-border': 'var(--border-color)',
+      }
+    },
   },
   plugins: [],
 }

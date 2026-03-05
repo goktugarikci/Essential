@@ -47,13 +47,13 @@ export const unblockUser = async (userId: string) => {
 
 // Kullanıcının kendi profil bilgilerini çeker
 export const getCurrentUser = async () => {
-  const response = await apiClient.get('/user/me');
+  const response = await apiClient.get('/users/me');
   return response.data;
 };
 
 // Kullanıcının arkadaşlarını çeker
 export const getFriendsList = async () => {
-  const response = await apiClient.get('/friends/list');
+  const response = await apiClient.get('/friends');
   return response.data; // Dizi (Array) dönmesi bekleniyor
 };
 
