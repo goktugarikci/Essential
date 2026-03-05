@@ -1,0 +1,8 @@
+/* src/index.css */
+@import "tailwindcss";
+
+/* Eğer özel bir font veya arka plan rengi eklemek isterseniz buraya devam edebilirsiniz */
+body {
+  background-color: #0f0c29;
+  color: white;
+}
