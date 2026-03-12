@@ -3,11 +3,11 @@ import React, { useEffect } from 'react';
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
 import { useWebSocket } from '../hooks/useWebSocket';
 
-// Kalkan: Tauri ortamında (Masaüstü) olup olmadığımızı kontrol ediyoruz
-const isTauri = () => {
-  return typeof window !== 'undefined' && window.__TAURI_INTERNALS__ !== undefined;
-};
 
+// Uygulamanın Chrome'da mı yoksa Tauri Masaüstü'nde mi çalıştığını anlar
+const isTauri = () => {
+  return typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__ !== undefined;
+};
 const NotificationManager: React.FC = () => {
   const { lastMessage } = useWebSocket('/notifications');
 

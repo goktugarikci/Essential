@@ -14,15 +14,16 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({ isOpen, onClose,
 
   if (!isOpen) return null;
 
-  // İsteği gönderen ve ardından input'u temizleyen yardımcı fonksiyon
+  // İsteği Dashboard'a gönderen ve ardından input'u temizleyen yardımcı fonksiyon
   const handleSendRequest = () => {
     if (!friendInput.trim()) return;
     
-    onAddFriend(friendInput.trim());
+    // Girdiğimiz ismi Dashboard'daki fonksiyona yolluyoruz
+    onAddFriend(friendInput.trim()); 
     setFriendInput(''); // Başarılı gönderimden sonra input'u sıfırla
   };
 
-  // Modalı kapatırken de input'u temizlemek için
+  // Modalı iptal ederek kapatırken de input'u temizlemek için
   const handleClose = () => {
     setFriendInput('');
     onClose();
