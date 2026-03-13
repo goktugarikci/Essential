@@ -1,6 +1,7 @@
 // src/components/modals/SearchModal.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import apiClient from '../../api/apiClient'; // 🟢 DÜZELTİLDİ: Doğru Import Yolu
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -11,6 +12,39 @@ interface SearchModalProps {
 
 export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, searchInput, setSearchInput }) => {
   const { t } = useTranslation();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [results, setResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  // Debounce Mantığı: Kullanıcı yazmayı bıraktıktan 500ms sonra API'ye istek atar.
+  useEffect(() => {
+    if (!searchInput.trim()) {
+      setResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await apiClient.get(`/api/users/search?q=${searchInput.trim()}`);
+        setResults(res.data || []);
+      } catch (err) {
+        console.error("Arama hatası:", err);
+        setResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchInput]);
+
+  const handleClose = () => {
+    setSearchInput('');
+    setResults([]);
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -25,12 +59,12 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, searc
             type="text" 
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder={t('dash_search_placeholder', {defaultValue: 'Kişi, eski mesaj veya sunucu ara...'})}
+            placeholder={t('dash_search_placeholder', {defaultValue: 'Kişi, e-posta veya sunucu ara...'})}
             className="flex-1 bg-transparent text-theme-text focus:outline-none text-lg placeholder-theme-muted/50"
             autoFocus
           />
           <button 
-            onClick={onClose} 
+            onClick={handleClose} 
             className="w-8 h-8 rounded-full bg-theme-primary hover:bg-red-500 text-theme-muted hover:text-white flex items-center justify-center transition-all shrink-0"
           >
             ✖
@@ -43,9 +77,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, searc
             <div className="m-auto text-center text-theme-muted">
               <div className="text-5xl mb-4 opacity-50">🧭</div>
               <p className="font-medium text-theme-text">{t('dash_search_empty', {defaultValue: 'Ne aramak istiyorsun?'})}</p>
-              <p className="text-sm mt-1 opacity-70">Sohbetler arasında kaybolmana gerek yok, sadece yazmaya başla.</p>
+              <p className="text-sm mt-1 opacity-70">Ağındaki kişileri bulmak için yazmaya başla.</p>
             </div>
-          ) : (
+          ) : isSearching ? (
             <div className="text-center text-theme-muted mt-16">
               <svg className="animate-spin h-10 w-10 text-blue-500 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -53,6 +87,30 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, searc
               </svg>
               <p className="animate-pulse">"<strong className="text-theme-text">{searchInput}</strong>" aranıyor...</p>
             </div>
+          ) : results.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              <h3 className="text-xs font-bold text-theme-muted uppercase mb-2">Bulunan Kişiler ({results.length})</h3>
+              {results.map((user) => (
+                <div key={user.id} className="flex items-center justify-between p-3 bg-theme-primary rounded-lg border border-theme-border hover:border-blue-500 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-blue-500/20 text-blue-500 flex justify-center items-center font-bold">
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-theme-text font-bold text-sm">{user.name}</p>
+                      <p className="text-theme-muted text-xs">{user.email}</p>
+                    </div>
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded-md ${user.status === 'Online' ? 'bg-green-500/10 text-green-500' : 'bg-gray-500/10 text-gray-500'}`}>
+                    {user.status || 'Offline'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+             <div className="m-auto text-center text-theme-muted">
+               <p className="text-lg">Sonuç bulunamadı 😔</p>
+             </div>
           )}
         </div>
         

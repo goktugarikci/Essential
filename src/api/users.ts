@@ -7,19 +7,19 @@ import apiClient from './apiClient';
 
 // Mevcut giriş yapmış kullanıcıyı getirir
 export const getCurrentUser = async () => {
-  const { data } = await apiClient.get('/users/me');
+  const { data } = await apiClient.get('/api/users/me');
   return data;
 };
 
 // Kullanıcı profilini günceller
 export const updateProfile = async (profileData: any) => {
-  const { data } = await apiClient.put('/users/me', profileData);
+  const { data } = await apiClient.put('/api/users/me', profileData);
   return data;
 };
 
 // İsim veya e-posta ile sistemde kullanıcı arar
 export const searchUsers = async (query: string) => {
-  const { data } = await apiClient.get(`/users/search?q=${query}`);
+  const { data } = await apiClient.get(`/api/users/search?q=${query}`);
   return data;
 };
 
@@ -29,40 +29,40 @@ export const searchUsers = async (query: string) => {
 
 // Kabul edilmiş (Status=1) arkadaşların listesini getirir
 export const getFriendsList = async () => {
-  const { data } = await apiClient.get('/friends');
+  const { data } = await apiClient.get('/api/friends');
   return data;
 };
 
 // Bekleyen (Status=0) Gelen ve Giden istekleri getirir
 export const getPendingRequests = async () => {
-  const { data } = await apiClient.get('/friends/requests');
+  const { data } = await apiClient.get('/api/friends/requests');
   return data;
 };
 
 // Yeni bir arkadaşlık isteği gönderir
 export const sendFriendRequest = async (targetId: string) => {
   // C++ Backend 'target_id' adında bir JSON anahtarı bekliyor
-  const { data } = await apiClient.post('/friends/request', { target_id: targetId });
+  const { data } = await apiClient.post('/api/friends/request', { target_id: targetId });
   return data;
 };
 
 // Gelen bir arkadaşlık isteğini kabul eder (Status=1 yapar)
 export const acceptFriendRequest = async (requesterId: string) => {
   // C++ Backend { "status": "accepted" } JSON gövdesini bekliyor
-  const { data } = await apiClient.put(`/friends/requests/${requesterId}`, { status: "accepted" });
+  const { data } = await apiClient.put(`/api/friends/requests/${requesterId}`, { status: "accepted" });
   return data;
 };
 
 // Gelen bir isteği reddeder veya giden bir isteği iptal eder (Veritabanından siler)
 export const rejectFriendRequest = async (targetOrRequesterId: string) => {
   // C++ Backend { "status": "rejected" } JSON gövdesini bekliyor
-  const { data } = await apiClient.put(`/friends/requests/${targetOrRequesterId}`, { status: "rejected" });
+  const { data } = await apiClient.put(`/api/friends/requests/${targetOrRequesterId}`, { status: "rejected" });
   return data;
 };
 
 // Mevcut bir arkadaşı listeden çıkarır
 export const removeFriend = async (friendId: string) => {
-  const { data } = await apiClient.delete(`/friends/${friendId}`);
+  const { data } = await apiClient.delete(`/api/friends/${friendId}`);
   return data;
 };
 
@@ -71,21 +71,21 @@ export const removeFriend = async (friendId: string) => {
 // ==========================================================
 
 export const getBlockedUsers = async () => {
-  const { data } = await apiClient.get('/friends/blocks');
+  const { data } = await apiClient.get('/api/friends/blocks');
   return data;
 };
 
 export const blockUser = async (targetId: string) => {
-  const { data } = await apiClient.post('/friends/blocks', { target_id: targetId });
+  const { data } = await apiClient.post('/api/friends/blocks', { target_id: targetId });
   return data;
 };
 
 export const unblockUser = async (targetId: string) => {
-  const { data } = await apiClient.delete(`/friends/blocks/${targetId}`);
+  const { data } = await apiClient.delete(`/api/friends/blocks/${targetId}`);
   return data;
 };
 export const getChatHistory = async (friendId: string) => {
   // C++ Backend: GET /api/chat/history/<id> (veya /api/messages/<id>)
-  const { data } = await apiClient.get(`/chat/history/${friendId}`);
+  const { data } = await apiClient.get(`/api/chat/history/${friendId}`);
   return data;
 };

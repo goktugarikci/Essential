@@ -12,7 +12,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ channelId }) => {
   
   // Hook'u çağırarak anlık bağlantıyı başlatıyoruz
   // (Örn: ws://localhost:8080/ws/chat?token=...)
-  const { isConnected, lastMessage, sendMessage } = useWebSocket('/chat');
+  const { isConnected, lastMessage, sendMessage } = useWebSocket('/api/chat');
 
   // Sunucudan yeni bir WebSocket mesajı geldiğinde tetiklenir
   useEffect(() => {
