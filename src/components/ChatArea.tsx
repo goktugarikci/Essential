@@ -1,12 +1,11 @@
 // src/components/ChatArea.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getChatHistory } from '../api/users'; 
+import { useWebSocket } from '../hooks/useWebSocket'; // WebSocket Hook'umuzu ekledik
 
 interface User {
   id: string;
   name: string;
-  email?: string;
   status: 'online' | 'offline' | 'busy';
 }
 
@@ -15,6 +14,7 @@ interface Message {
   senderId: string;
   text: string;
   timestamp: string;
+  attachmentUrl?: string; // Backend'den gelebilecek medya dosyaları için
 }
 
 interface ChatAreaProps {
@@ -23,19 +23,22 @@ interface ChatAreaProps {
   onClose: () => void;
 }
 
+// Resim vb. dosyalar için Backend Base URL
+const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+
 const ChatArea: React.FC<ChatAreaProps> = ({ currentUser, friend, onClose }) => {
   const { t } = useTranslation();
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [wsStatus, setWsStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
-  
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const wsRef = useRef<WebSocket | null>(null);
 
-  // İki kullanıcı için ortak benzersiz oda ID'si
-  const chatChannelId = currentUser ? [currentUser.id, friend.id].sort().join('_') : '';
+  // WebSocket Bağlantısını Çağırıyoruz
+  const { sendMessage: sendWsMessage, lastMessage } = useWebSocket('/ws/chat');
 
+  // Sayfa açıldığında API'den geçmiş mesajları çekmek için bir useEffect eklenebilir.
+  // Örn: apiClient.get(`/api/chat/history/${friend.id}`).then(res => setMessages(res.data));
+
+  // Yeni mesaj eklendiğinde en alta kaydır
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -44,225 +47,148 @@ const ChatArea: React.FC<ChatAreaProps> = ({ currentUser, friend, onClose }) => 
     scrollToBottom();
   }, [messages]);
 
-  // 1. ESKİ MESAJLARI ÇEK
+  // Backend'den Canlı Mesaj (WebSocket) Geldiğinde Yakala
   useEffect(() => {
-    const fetchHistory = async () => {
-      setIsLoading(true);
-      try {
-        const historyData = await getChatHistory(friend.id);
-        const formattedHistory = Array.isArray(historyData) ? historyData.map((msg: any) => ({
-          id: msg.id || msg.ID || Date.now().toString() + Math.random().toString(36).substring(2, 5),
-          senderId: msg.sender_id || msg.SenderID || msg.senderId || msg.RequesterID,
-          text: msg.content || msg.Content || msg.message || msg.Message,
-          timestamp: msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '00:00'
-        })) : [];
+    if (lastMessage && lastMessage.type === 'new_message') {
+      // Mesajın bu sohbete (bana veya arkadaşıma) ait olup olmadığını kontrol et
+      const isRelevant = 
+        (lastMessage.gönderenID === friend.id && lastMessage.alıcıID === currentUser?.id) ||
+        (lastMessage.gönderenID === currentUser?.id && lastMessage.alıcıID === friend.id);
 
-        setMessages(formattedHistory);
-      } catch (error) {
-        console.error("Geçmiş çekilemedi:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchHistory();
-  }, [friend.id]);
+      if (isRelevant) {
+        const newMsg: Message = {
+          id: Date.now().toString(), // React list key için geçici ID
+          senderId: lastMessage.gönderenID,
+          text: lastMessage.Mesaj, // Backend "Mesaj" key'i ile yolluyor
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          attachmentUrl: lastMessage.attachmentUrl || undefined
+        };
+        
+        // Gelen mesajı ekrana bas
+        setMessages((prev) => [...prev, newMsg]);
 
-  // 2. KURŞUN GEÇİRMEZ WEBSOCKET BAĞLANTISI
-  useEffect(() => {
-    if (!currentUser?.id || !chatChannelId) return;
-
-    let isComponentMounted = true;
-    let socket: WebSocket | null = null;
-
-    const connectWebSocket = () => {
-      if (!isComponentMounted) return;
-      
-      setWsStatus('connecting');
-      socket = new WebSocket('ws://localhost:8080/ws/chat');
-      wsRef.current = socket;
-
-      socket.onopen = () => {
-        if (!isComponentMounted) {
-          socket?.close();
-          return;
-        }
-        setWsStatus('connected');
-        // Odaya kayıt oluyoruz
-        socket?.send(JSON.stringify({ type: "subscribe", channel_id: chatChannelId }));
-      };
-
-      socket.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          
-          if (data.type === "message" && data.sender_id && data.text) {
-            
-            // DİKKAT: C++ sunucusu mesajı odadaki herkese yansıttığı için (Echo)
-            // Kendi gönderdiğimiz mesajı tekrar alıp ekrana çift basmamak için engelliyoruz!
-            if (data.sender_id === currentUser.id) return;
-
-            const incomingMsg: Message = {
-              id: data.id || Date.now().toString(),
-              senderId: data.sender_id,
-              text: data.text,
-              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
-
-            setMessages(prev => {
-              if (prev.some(msg => msg.id === incomingMsg.id)) return prev;
-              return [...prev, incomingMsg];
+        // Karşı tarafa "Okundu" (Mavi Tik) bilgisini geri yolla
+        if (lastMessage.gönderenID === friend.id && currentUser) {
+            sendWsMessage('read_receipt', {
+                reader_id: currentUser.id,
+                sender_id: friend.id
             });
-          }
-        } catch (err) {
-          console.error("Gelen veri okunamadı:", err);
-        }
-      };
-
-      socket.onclose = () => {
-        if (isComponentMounted) {
-          console.warn("⚠️ [WS] Bağlantı koptu. 2 saniye içinde yeniden bağlanılıyor...");
-          setWsStatus('error');
-          setTimeout(connectWebSocket, 2000); // Otomatik yeniden bağlanma
-        }
-      };
-      
-      socket.onerror = () => {
-        setWsStatus('error');
-      };
-    };
-
-    connectWebSocket();
-
-    // TEMİZLEME - React Strict Mode sarı hatalarını engeller
-    return () => {
-      isComponentMounted = false;
-      if (socket) {
-        if (socket.readyState === WebSocket.OPEN) {
-          socket.close();
-        } else if (socket.readyState === WebSocket.CONNECTING) {
-          socket.onopen = () => socket?.close();
         }
       }
-    };
-  }, [currentUser?.id, friend.id, chatChannelId]);
+    }
+  }, [lastMessage, friend.id, currentUser?.id]);
 
-  // 3. MESAJ GÖNDERME
   const handleSendMessage = () => {
-    if (!inputText.trim() || !currentUser || !wsRef.current) return;
+    if (!inputText.trim() || !currentUser) return;
     
-    const uniqueId = Date.now().toString() + "-" + Math.random().toString(36).substring(2, 9);
-    
-    // C++'ın beklediği BİREBİR snake_case format
-    const payload = {
-      type: "message",
-      id: uniqueId,
+    // 1. Ekranda (Kendi arayüzümüzde) mesajı hemen göster (Optimistic UI)
+    const newMsg: Message = {
+      id: Date.now().toString(),
+      senderId: currentUser.id,
+      text: inputText,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setMessages((prev) => [...prev, newMsg]);
+
+    // 2. Mesajı C++ Backend'e (Soket üzerinden) fırlat
+    sendWsMessage('message', {
       sender_id: currentUser.id,
       target_id: friend.id,
-      text: inputText.trim(),
-      is_server: false
-    };
+      text: inputText,
+      is_group: false
+    });
 
-    if (wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(payload));
-
-      // Kendi ekranımıza anında ekliyoruz
-      const myNewMsg: Message = {
-        id: uniqueId,
-        senderId: currentUser.id, 
-        text: inputText.trim(),
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      
-      setMessages(prev => [...prev, myNewMsg]);
-      setInputText('');
-    } else {
-      alert("Sunucu ile canlı bağlantı kurulamıyor. Lütfen isminizin yanındaki LED'in yeşil olmasını bekleyin.");
-    }
+    setInputText('');
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-theme-tertiary h-full transition-colors duration-300 relative">
+    <div className="flex-1 flex flex-col bg-theme-tertiary h-full transition-colors duration-300">
       
-      {/* HEADER */}
-      <div className="h-16 border-b border-theme-border flex items-center px-6 gap-4 shadow-sm bg-theme-primary shrink-0 transition-colors z-10">
-        <div className="relative">
-          <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center font-bold text-white shadow-md">
-            {friend.name ? friend.name.charAt(0).toUpperCase() : "?"}
-          </div>
-          <div className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-theme-primary rounded-full ${friend.status === 'online' ? 'bg-green-500' : 'bg-gray-500'}`}></div>
-        </div>
-        
-        <div className="flex flex-col">
-          <span className="font-bold text-theme-text text-base leading-tight flex items-center gap-2">
-            {friend.name}
-            {/* CANLI BAĞLANTI LED GÖSTERGESİ */}
-            {wsStatus === 'connected' && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" title="Canlı Bağlantı Aktif"></span>}
-            {wsStatus === 'connecting' && <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" title="Bağlanıyor..."></span>}
-            {wsStatus === 'error' && <span className="w-2 h-2 rounded-full bg-red-500" title="Bağlantı Koptu"></span>}
-          </span>
-          <span className="text-[11px] text-theme-muted leading-tight">
-            {wsStatus === 'connected' ? "Uçtan Uca Şifreli Bağlantı Aktif" : "Sunucuya bağlanılıyor..."}
-          </span>
+      {/* SOHBET ÜST BARI (HEADER) */}
+      <div className="h-14 border-b border-theme-border flex items-center px-6 gap-4 shadow-sm bg-theme-primary shrink-0 transition-colors">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl text-theme-muted">@</span>
+          <div className="font-bold text-theme-text text-lg">{friend.name}</div>
+          <div className={`w-2.5 h-2.5 rounded-full ${friend.status === 'online' ? 'bg-green-500' : 'bg-gray-500'}`}></div>
         </div>
 
-        <div className="ml-auto flex items-center gap-2 text-theme-muted">
-          <button className="w-9 h-9 rounded-full hover:bg-theme-secondary hover:text-theme-text flex items-center justify-center transition" title="Sesli Arama">📞</button>
-          <button className="w-9 h-9 rounded-full hover:bg-theme-secondary hover:text-theme-text flex items-center justify-center transition" title="Görüntülü Arama">📹</button>
-          <div className="w-[1px] h-6 bg-theme-border mx-2"></div>
-          <button onClick={onClose} className="w-9 h-9 rounded-full hover:bg-red-500/10 hover:text-red-500 flex items-center justify-center transition" title="Sohbeti Kapat">✖</button>
+        <div className="ml-auto flex items-center gap-4 text-theme-muted">
+          <button className="hover:text-theme-text transition" title="Sesli Arama">📞</button>
+          <button className="hover:text-theme-text transition" title="Görüntülü Arama">📹</button>
+          <div className="w-[1px] h-6 bg-theme-border mx-1"></div>
+          <button onClick={onClose} className="hover:text-red-500 transition" title="Sohbeti Kapat">✖</button>
         </div>
       </div>
 
       {/* MESAJLAR ALANI */}
-      <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
-        {isLoading ? (
-          <div className="text-center text-theme-muted my-4 flex justify-center items-center gap-2">
-            <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-            Mesaj geçmişi yükleniyor...
+      <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+        {/* Sohbet Başlangıç Bilgisi */}
+        <div className="mt-auto flex flex-col items-center justify-center text-center pb-6 border-b border-theme-border/50 mb-4">
+          <div className="w-24 h-24 rounded-full bg-blue-500 flex items-center justify-center font-bold text-4xl text-white mb-4 shadow-xl">
+            {friend.name.charAt(0).toUpperCase()}
           </div>
-        ) : (
-          messages.map((msg) => {
-            const isMe = msg.senderId === currentUser?.id;
-            return (
-              <div key={msg.id} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : 'flex-row'} group`}>
-                <div className="w-8 h-8 rounded-full bg-theme-secondary flex items-center justify-center font-bold text-xs text-theme-text shrink-0 shadow-md">
-                  {isMe ? currentUser?.name.charAt(0).toUpperCase() : friend.name.charAt(0).toUpperCase()}
+          <h2 className="text-2xl font-bold text-theme-text mb-2">{friend.name}</h2>
+          <p className="text-theme-muted text-sm">
+            Bu mesajlaşma seninle <strong>{friend.name}</strong> arasındaki özel sohbetin başlangıcı.
+          </p>
+        </div>
+
+        {/* Mesaj Baloncukları */}
+        {messages.map((msg) => {
+          const isMe = msg.senderId === currentUser?.id;
+          return (
+            <div key={msg.id} className={`flex gap-4 ${isMe ? 'flex-row-reverse' : 'flex-row'} group`}>
+              {/* Avatar */}
+              <div className="w-10 h-10 rounded-full bg-theme-secondary flex items-center justify-center font-bold text-theme-text shrink-0 shadow-md">
+                {isMe ? currentUser?.name.charAt(0).toUpperCase() : friend.name.charAt(0).toUpperCase()}
+              </div>
+              
+              {/* Mesaj İçeriği */}
+              <div className={`flex flex-col max-w-[70%] ${isMe ? 'items-end' : 'items-start'}`}>
+                <div className="flex items-baseline gap-2 mb-1 px-1">
+                  <span className="font-bold text-sm text-theme-text">{isMe ? currentUser?.name : friend.name}</span>
+                  <span className="text-[10px] text-theme-muted">{msg.timestamp}</span>
                 </div>
-                <div className={`flex flex-col max-w-[70%] ${isMe ? 'items-end' : 'items-start'}`}>
-                  <div className="flex items-baseline gap-2 mb-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    <span className="font-bold text-[11px] text-theme-muted">{isMe ? t('dash_you', {defaultValue: 'Sen'}) : friend.name}</span>
-                    <span className="text-[9px] text-theme-muted/70">{msg.timestamp}</span>
-                  </div>
-                  <div className={`px-4 py-2.5 rounded-2xl shadow-sm text-sm break-words ${isMe ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-theme-secondary text-theme-text rounded-tl-sm border border-theme-border'}`}>
-                    {msg.text}
-                  </div>
+                
+                <div className={`p-3 rounded-2xl shadow-sm text-sm ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-theme-secondary text-theme-text rounded-tl-none border border-theme-border'}`}>
+                  {msg.text}
+                  
+                  {/* Dosya / Resim Eklentisi Varsa Göster (Güvenli URL birleştirme) */}
+                  {msg.attachmentUrl && (
+                    <img 
+                      src={msg.attachmentUrl.startsWith('/') ? `${BACKEND_URL}${msg.attachmentUrl}` : msg.attachmentUrl} 
+                      alt="attachment" 
+                      className="mt-2 rounded-lg max-h-48 object-cover"
+                    />
+                  )}
                 </div>
               </div>
-            );
-          })
-        )}
+            </div>
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* MESAJ GÖNDERME KUTUSU (FOOTER) */}
-      <div className="p-4 bg-theme-primary border-t border-theme-border shrink-0">
-        <div className={`bg-theme-secondary rounded-xl pr-2 pl-4 py-2 flex items-center gap-3 border transition-colors shadow-inner ${wsStatus === 'connected' ? 'border-theme-border focus-within:border-blue-500' : 'border-red-500/50'}`}>
+      {/* MESAJ YAZMA ALANI (FOOTER) */}
+      <div className="p-4 bg-theme-tertiary shrink-0">
+        <div className="bg-theme-secondary rounded-xl p-2 flex items-center gap-3 border border-theme-border focus-within:border-blue-500 transition-colors shadow-inner">
+          <button className="w-10 h-10 rounded-full flex justify-center items-center text-theme-muted hover:bg-theme-primary hover:text-theme-text transition">
+            <span className="text-xl">⊕</span>
+          </button>
+          
           <input 
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-            placeholder={wsStatus === 'connected' ? `${t('dash_message_placeholder', {defaultValue: 'Mesaj yaz'})} @${friend.name}...` : 'Bağlantı bekleniyor...'}
-            disabled={wsStatus !== 'connected'}
-            className="flex-1 bg-transparent text-theme-text focus:outline-none text-sm w-full disabled:opacity-50"
-            autoFocus
+            placeholder={`@${friend.name} kullanıcısına mesaj gönder...`}
+            className="flex-1 bg-transparent text-theme-text focus:outline-none text-sm"
           />
+          
           <button 
             onClick={handleSendMessage}
-            disabled={!inputText.trim() || wsStatus !== 'connected'}
-            className="w-8 h-8 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:bg-theme-tertiary disabled:text-theme-muted flex justify-center items-center text-white transition-all shadow-md"
-          >
-             <svg className="w-4 h-4 translate-x-[-1px] translate-y-[1px]" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
+            className="w-10 h-10 rounded-full flex justify-center items-center text-theme-muted hover:bg-theme-primary hover:text-blue-500 transition">
+            <span>🚀</span>
           </button>
         </div>
       </div>

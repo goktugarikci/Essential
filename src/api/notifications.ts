@@ -10,16 +10,16 @@ export interface NotificationData {
 }
 
 export const getNotifications = async () => {
-  const { data } = await apiClient.get('/notifications');
+  const { data } = await apiClient.get('/api/notifications');
   return data;
 };
 
 export const markAsRead = async (notificationId: string) => {
-  const { data } = await apiClient.put(`/notifications/${notificationId}/read`);
+  const { data } = await apiClient.put(`/api/notifications/${notificationId}/read`);
   return data;
 };
 
 export const markAllAsRead = async () => {
-  const { data } = await apiClient.put('/notifications/read-all');
+  const { data } = await apiClient.put('/api/notifications/read-all');
   return data;
 };
