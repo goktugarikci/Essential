@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGlobalWebSocket } from '../contexts/WebSocketContext'; // 🟢 DÜZELTİLDİ
+import { getChatHistory, markMessagesAsRead } from '../api/users';
 
 interface User { id: string; name: string; status: 'online' | 'offline' | 'busy'; }
 interface Message { id: string; senderId: string; text: string; timestamp: string; attachmentUrl?: string; }
@@ -24,6 +25,35 @@ const ChatArea: React.FC<ChatAreaProps> = ({ currentUser, friend, onClose }) => 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // 🟢 EKLENDİ: Sohbet Geçmişini Yükle ve Okundu İşaretle
+  useEffect(() => {
+    const loadHistory = async () => {
+      if (!friend.id) return;
+      setMessages([]); // Sohbet değiştiğinde önceki mesajları temizle
+
+      try {
+        // 1. Geçmişi Çek
+        const historyData = await getChatHistory(friend.id);
+        if (Array.isArray(historyData)) {
+          // Backend verisini UI formatına dönüştür
+          const formattedMessages = historyData.map((m: any) => ({
+            id: m.id || m.ID || Math.random().toString(),
+            senderId: m.sender_id || m.gönderenID || m.senderId,
+            text: m.content || m.Mesaj || m.text,
+            timestamp: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (m.timestamp || ""),
+            attachmentUrl: m.attachment_url
+          }));
+          setMessages(formattedMessages);
+        }
+        // 2. Mesajları Okundu Olarak İşaretle
+        await markMessagesAsRead(friend.id);
+      } catch (error) {
+        console.error("Sohbet geçmişi yüklenemedi:", error);
+      }
+    };
+    loadHistory();
+  }, [friend.id]);
 
   // Canlı Mesaj Dinleyici
   useEffect(() => {
@@ -53,22 +83,26 @@ const ChatArea: React.FC<ChatAreaProps> = ({ currentUser, friend, onClose }) => 
   const handleSendMessage = () => {
     if (!inputText.trim() || !currentUser) return;
     
+    const textToSend = inputText;
     const newMsg: Message = {
       id: Date.now().toString(),
       senderId: currentUser.id,
-      text: inputText,
+      text: textToSend,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
-    setMessages((prev) => [...prev, newMsg]);
 
+    // Optimistic Update (Arayüzde hemen göster)
+    setMessages((prev) => [...prev, newMsg]);
+    setInputText('');
+
+    // 🟢 DÜZELTME: API (CORS) yerine WebSocket Kanalı Kullanımı
     sendWsMessage('message', {
       sender_id: currentUser.id,
       target_id: friend.id,
-      text: inputText,
+      content: textToSend, // Backend için standart alan
+      text: textToSend,    // Yedek uyumluluk alanı
       is_group: false
     });
-
-    setInputText('');
   };
 
   return (

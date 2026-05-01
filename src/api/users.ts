@@ -89,3 +89,18 @@ export const getChatHistory = async (friendId: string) => {
   const { data } = await apiClient.get(`/api/chat/history/${friendId}`);
   return data;
 };
+// Mesaj Gönderme
+export const sendMessage = async (targetId: string, content: string) => {
+  // Backend yapısına uygun olarak POST isteği
+  const { data } = await apiClient.post('/api/chat/messages', { 
+    target_id: targetId, 
+    content: content 
+  });
+  return data;
+};
+
+// Mesajları Okundu Olarak İşaretleme
+export const markMessagesAsRead = async (friendId: string) => {
+  const { data } = await apiClient.put(`/api/chat/read/${friendId}`);
+  return data;
+};

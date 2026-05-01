@@ -226,8 +226,13 @@ const Dashboard: React.FC = () => {
 
       {/* 3. SÜTUN: ANA İÇERİK */}
       <div className="flex-1 bg-theme-tertiary flex flex-col rounded-tl-lg relative z-10 min-w-0">
-        {activeChatUser ? (
-          <ChatArea currentUser={currentUser} friend={activeChatUser} onClose={() => setActiveChatUser(null)} />
+        {activeChatUser && currentUser ? (
+          <ChatArea 
+            key={activeChatUser.id} /* ÖNEMLİ: Kullanıcı değiştiğinde bileşeni sıfırlar */
+            currentUser={currentUser} 
+            friend={activeChatUser} 
+            onClose={() => setActiveChatUser(null)} 
+          />
         ) : (
           <>
             <div className="h-14 border-b border-theme-border flex items-center px-4 md:px-6 gap-2 shadow-sm bg-theme-primary/30 shrink-0">
